@@ -72,9 +72,9 @@ window.CromApp.Components = {
         <header class="sticky top-0 z-50 glass-effect border-b border-slate-200/50 dark:border-slate-800/50 bg-white/70 dark:bg-slate-950/70 backdrop-blur-xl transition-all duration-300">
             <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                 <!-- Minimalist Logo Icon Only -->
-                <a href="javascript:void(0)" onclick="CromApp.navigate('inicio')" class="flex items-center gap-2 group hover:scale-105 transition-transform">
+                <a href="/" onclick="CromApp.navigate('inicio')" class="flex items-center gap-2 group hover:scale-105 transition-transform">
                      <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
-                        <i data-lucide="box" class="w-5 h-5"></i>
+                        <img src="https://crom.run/favicon.ico" alt="Logo"> 
                      </div>
                 </a>
                 
