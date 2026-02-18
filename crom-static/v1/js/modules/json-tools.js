@@ -5,6 +5,7 @@ window.CromApp.registerTool({
     desc: 'Formatar, minificar e validar JSON localmente.',
     icon: 'braces',
     color: 'bg-yellow-500',
+    category: 'Dev',
     tags: ['json', 'formatar', 'validar', 'dev'],
     render: () => `
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[500px]">

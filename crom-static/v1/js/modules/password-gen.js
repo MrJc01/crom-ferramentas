@@ -5,6 +5,7 @@ window.CromApp.registerTool({
     desc: 'Crie senhas fortes localmente. Nenhuma dado sai do seu dispositivo.',
     icon: 'lock',
     color: 'bg-rose-500',
+    category: 'Segurança',
     tags: ['senha', 'segurança', 'privacidade', 'gerador'],
     render: () => `
         <div class="max-w-md mx-auto py-8">

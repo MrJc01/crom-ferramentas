@@ -11,6 +11,7 @@ window.CromApp.registerTool({
     desc: 'Editor e conversor local com prévia real.',
     icon: 'file-text',
     color: 'bg-blue-500',
+    category: 'Documentos',
     tags: ['markdown', 'pdf', 'texto', 'converter'],
     render: () => `
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[450px]">

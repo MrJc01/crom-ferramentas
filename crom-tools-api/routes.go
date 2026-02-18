@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"image"
@@ -60,12 +61,20 @@ func ConvertPDF(c *fiber.Ctx) error {
          return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Browser service not initialized"})
     }
 
+    // Create context with timeout to prevent zombies
+    ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+    defer cancel()
+
+    // Create page with context
+    // Note: We need to use a context-aware browser clone or just control the page operations with context ideally.
+    // Rod's `MustPage` doesn't take context directly but we can use `Context` on the browser.
+    
     // Acquire semaphore
     BrowserSemaphore <- struct{}{}
     defer func() { <-BrowserSemaphore }()
 
-    // Incognito page for privacy
-    page := Browser.MustIncognito().MustPage("about:blank")
+    // Use context for the page
+    page := Browser.Context(ctx).MustIncognito().MustPage("about:blank")
     defer page.MustClose() 
     
     // Set content
@@ -73,7 +82,7 @@ func ConvertPDF(c *fiber.Ctx) error {
          return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to set content: " + err.Error()})
     }
     
-    // Wait for network idle to ensure resources (if any) are loaded
+    // Wait for network idle
     page.MustWaitLoad()
 
     // Generate PDF
@@ -160,6 +169,16 @@ type EncodeError error
 
 // ProcessHeavyOCR handles OCR using Tesseract via os/exec
 func ProcessHeavyOCR(c *fiber.Ctx) error {
+    // 1. Queue Acquisition (Fail fast if full?)
+    // Current channel has buffer 1. If we want to block, we wait. 
+    // If we want to fail fast:
+    select {
+    case OCRQueue <- struct{}{}:
+        defer func() { <-OCRQueue }()
+    case <-time.After(5 * time.Second):
+        return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "OCR Queue full, try again later"})
+    }
+
 	file, err := c.FormFile("image")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Image file is required for OCR"})
@@ -174,12 +193,12 @@ func ProcessHeavyOCR(c *fiber.Ctx) error {
 	}
 	defer os.Remove(tempFile) // Cleanup
 
-    // Acquire Task Queue
-    OCRQueue <- struct{}{}
-    defer func() { <-OCRQueue }()
+    // 2. Command with Context/Timeout
+    ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+    defer cancel()
 
 	// Run Tesseract: tesseract input.png stdout
-	cmd := exec.Command("tesseract", tempFile, "stdout")
+	cmd := exec.CommandContext(ctx, "tesseract", tempFile, "stdout")
 	
 	// Capture stderr for debugging
 	var stderr bytes.Buffer
@@ -187,6 +206,9 @@ func ProcessHeavyOCR(c *fiber.Ctx) error {
 	
 	output, err := cmd.Output()
 	if err != nil {
+        if ctx.Err() == context.DeadlineExceeded {
+            return c.Status(fiber.StatusRequestTimeout).JSON(fiber.Map{"error": "OCR Processing Timeout"})
+        }
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error":   "OCR Processing Failed",
 			"details": stderr.String(), // Return stderr details
@@ -200,6 +222,14 @@ func ProcessHeavyOCR(c *fiber.Ctx) error {
 
 // ProcessHeavyVideo handles video conversion using FFmpeg
 func ProcessHeavyVideo(c *fiber.Ctx) error {
+    // 1. Queue Acquisition
+    select {
+    case VideoQueue <- struct{}{}:
+        defer func() { <-VideoQueue }()
+    case <-time.After(10 * time.Second):
+         return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": "Video Queue full, try again later"})
+    }
+
 	file, err := c.FormFile("video")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Video file is required"})
@@ -215,18 +245,21 @@ func ProcessHeavyVideo(c *fiber.Ctx) error {
 	defer os.Remove(inputPath)
 	defer os.Remove(outputPath)
 
-    // Acquire Task Queue
-    VideoQueue <- struct{}{}
-    defer func() { <-VideoQueue }()
+    // 2. Command with Context/Timeout (Video takes longer)
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+    defer cancel()
 
 	// Run FFmpeg: Convert to MP4 (H.264 + AAC)
 	// ffmpeg -i input.mov -c:v libx264 -c:a aac output.mp4
-	cmd := exec.Command("ffmpeg", "-i", inputPath, "-c:v", "libx264", "-c:a", "aac", "-strict", "experimental", "-y", outputPath)
+	cmd := exec.CommandContext(ctx, "ffmpeg", "-i", inputPath, "-c:v", "libx264", "-c:a", "aac", "-strict", "experimental", "-y", outputPath)
 	
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
+        if ctx.Err() == context.DeadlineExceeded {
+            return c.Status(fiber.StatusRequestTimeout).JSON(fiber.Map{"error": "Video Processing Timeout"})
+        }
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error":   "Video Processing Failed",
 			"details": stderr.String(),

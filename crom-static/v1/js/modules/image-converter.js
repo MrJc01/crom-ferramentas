@@ -5,6 +5,7 @@ window.CromApp.registerTool({
     desc: 'WebP, PNG, JPG processados localmente ou via nuvem.',
     icon: 'image',
     color: 'bg-emerald-500',
+    category: 'Imagem',
     tags: ['imagem', 'foto', 'conversor', 'png', 'jpg'],
     render: () => `
         <div class="text-center py-20 border-4 border-dashed border-slate-100 dark:border-slate-800 rounded-3xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
@@ -85,13 +86,15 @@ function processImageLocal(file) {
                 const buffer = e.target.result;
 
                 // Use Pool
+                // FIX: Do NOT transfer buffer for < 2MB files. Copying is fast enough and safer.
+                // Prevents "detached ArrayBuffer" if we need to reuse it or if worker fails.
                 getImageWorkerPool().run({
                     buffer: buffer,
                     type: file.type,
                     name: file.name,
                     action: 'convert',
                     format: 'png'
-                }, [buffer]).then(data => {
+                }, []).then(data => { // Empty transfer list
                     resolve(data.blob);
                 }).catch(err => {
                     reject(err);

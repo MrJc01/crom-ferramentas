@@ -5,6 +5,7 @@ window.CromApp.registerTool({
     desc: 'Extraia texto de imagens digitalizadas ou fotos.',
     icon: 'scan-text',
     color: 'bg-orange-500',
+    category: 'Imagem',
     tags: ['ocr', 'texto', 'extrair', 'ler', 'imagem'],
     render: () => `
          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[450px]">

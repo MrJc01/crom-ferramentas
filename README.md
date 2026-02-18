@@ -82,6 +82,64 @@ A API foi desenhada para não reter dados. Arquivos processados são enviados vi
 
 ---
 
+## 🐧 Deploy no Linux Mint (Produção)
+
+### 1. Serviço Systemd
+Crie um serviço para garantir que a API inicie automaticamente:
+
+```ini
+# /etc/systemd/system/crom-api.service
+[Unit]
+Description=Crom Tools API
+After=network.target
+
+[Service]
+User=seu-usuario
+Group=seu-grupo
+WorkingDirectory=/caminho/para/crom-ferramentas/crom-tools-api
+Environment="PORT=3000"
+ExecStart=/usr/local/go/bin/go run .
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Ative o serviço:
+```bash
+sudo systemctl enable --now crom-api
+```
+
+### 2. Caddy como Proxy Reverso
+Instale o Caddy no Mint:
+```bash
+sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+sudo apt update
+sudo apt install caddy
+```
+
+Copie o `Caddyfile` para `/etc/caddy/Caddyfile` e reinicie:
+```bash
+sudo cp Caddyfile /etc/caddy/Caddyfile
+sudo systemctl reload caddy
+```
+
+---
+
+## 🔧 Configuração do Frontend (`config.js`)
+
+O arquivo `crom-static/v1/js/core/config.js` define onde o frontend busca a API.
+
+```javascript
+window.CromApp.API_BASE = 'http://localhost:3000/v1'; // Dev
+// Para produção (com Caddy), use:
+// window.CromApp.API_BASE = 'https://tools-api.crom.run/v1';
+```
+
+---
+
 ## 📂 Estrutura de Pastas
 
 ```

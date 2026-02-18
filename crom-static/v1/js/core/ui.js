@@ -69,47 +69,51 @@ window.CromApp.UI.addResult = (blob, filename) => {
 // Components
 window.CromApp.Components = {
     Header: (currentView) => `
-        <header class="sticky top-0 z-50 glass-effect">
+        <header class="sticky top-0 z-50 glass-effect border-b dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md">
             <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                 <a href="javascript:void(0)" onclick="CromApp.navigate('inicio')" class="flex items-center gap-2 group">
-                    <div class="bg-indigo-600 p-1.5 rounded-lg group-hover:rotate-6 transition-transform">
-                        <i data-lucide="zap" class="text-white w-5 h-5 fill-current"></i>
-                    </div>
-                    <span class="text-xl font-black tracking-tighter">CROM<span class="text-indigo-600">TOOLS</span></span>
+                    <span class="text-xl font-black tracking-tighter text-slate-800 dark:text-white">Crom Ferramentas</span>
                 </a>
                 <nav class="hidden md:flex items-center gap-8 text-sm font-semibold">
-                    <button onclick="CromApp.navigate('inicio')" class="nav-link ${currentView === 'inicio' ? 'nav-active' : 'text-slate-500 hover:text-indigo-600'} transition-colors">Início</button>
-                    <button onclick="CromApp.navigate('sobre')" class="nav-link ${currentView === 'sobre' ? 'nav-active' : 'text-slate-500 hover:text-indigo-600'} transition-colors">Sobre</button>
-                     <button onclick="CromApp.navigate('historico')" class="nav-link ${currentView === 'historico' ? 'nav-active' : 'text-slate-500 hover:text-indigo-600'} transition-colors">Histórico</button>
+                    <button onclick="CromApp.navigate('inicio')" class="nav-link ${currentView === 'inicio' ? 'text-indigo-600' : 'text-slate-500 hover:text-indigo-600'} transition-colors">Início</button>
+                    <button onclick="CromApp.navigate('sobre')" class="nav-link ${currentView === 'sobre' ? 'text-indigo-600' : 'text-slate-500 hover:text-indigo-600'} transition-colors">Sobre</button>
+                     <button onclick="CromApp.navigate('historico')" class="nav-link ${currentView === 'historico' ? 'text-indigo-600' : 'text-slate-500 hover:text-indigo-600'} transition-colors">Histórico</button>
                 </nav>
                 <div class="flex items-center gap-4">
-                    <button onclick="CromApp.toggleDark()" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500">
+                    <button onclick="CromApp.toggleDark()" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors">
                         <i data-lucide="${document.documentElement.classList.contains('dark') ? 'sun' : 'moon'}"></i>
                     </button>
                 </div>
             </div>
         </header>
     `,
-    HomeView: (renderCardsFn, searchQuery) => `
+    HomeView: (renderCardsFn, searchQuery, renderCategoriesFn) => `
         <div class="animate-in fade-in duration-500">
-            <section class="max-w-7xl mx-auto px-6 py-20 text-center">
-                <h1 class="text-5xl md:text-7xl font-black mb-8 tracking-tight">
-                    Simples. Rápido. <br class="hidden md:block">
-                    <span class="text-indigo-600 underline decoration-indigo-200 underline-offset-8">Privado.</span>
+            <section class="max-w-7xl mx-auto px-6 py-12 md:py-20 text-center">
+                <h1 class="text-4xl md:text-6xl font-black mb-4 tracking-tight text-slate-900 dark:text-white">
+                    Simples. Rápido. Privado.
                 </h1>
-                 <div class="relative max-w-2xl mx-auto mb-16 group">
+                <p class="text-lg text-slate-500 dark:text-slate-400 mb-12 max-w-2xl mx-auto">
+                    Ferramentas essenciais para desenvolvedores e criativos, rodando diretamente no seu navegador.
+                </p>
+
+                 <div class="relative max-w-2xl mx-auto mb-10 group">
                     <div class="absolute inset-y-0 left-5 flex items-center pointer-events-none">
                         <i data-lucide="search" class="text-slate-400 group-focus-within:text-indigo-500 transition-colors w-5 h-5"></i>
                     </div>
                     <input 
                         type="text" 
                         id="toolSearch"
-                        placeholder="Pesquise por uma ferramenta..."
-                        class="w-full pl-14 pr-6 py-5 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 shadow-2xl focus:border-indigo-500 outline-none text-lg transition-all"
+                        placeholder="O que você precisa hoje?"
+                        class="w-full pl-14 pr-6 py-4 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none focus:border-indigo-500 outline-none text-lg transition-all"
                         onkeyup="CromApp.handleSearch(this.value)"
                         value="${searchQuery}"
                     >
                 </div>
+
+                <!-- CATEGORIES -->
+                ${renderCategoriesFn ? renderCategoriesFn() : ''}
+
                 <div id="toolsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
                     ${renderCardsFn()}
                 </div>
@@ -120,17 +124,22 @@ window.CromApp.Components = {
         <div class="animate-in slide-in-from-bottom-4 duration-500">
             <section class="max-w-4xl mx-auto px-6 py-20">
                  <div class="text-center mb-16">
-                    <h2 class="text-5xl font-black mb-6">Nossa Filosofia</h2>
-                    <p class="text-xl text-slate-500">Ferramentas que respeitam sua privacidade.</p>
+                    <h2 class="text-4xl font-black mb-6">Nossa Filosofia</h2>
+                    <p class="text-xl text-slate-500">Ferramentas que respeitam sua privacidade. Processamento local sempre que possível.</p>
                 </div>
-                 <button onclick="CromApp.navigate('inicio')" class="bg-white text-indigo-600 px-10 py-4 rounded-xl font-black hover:scale-105 transition-transform">Voltar às Ferramentas</button>
+                 <div class="text-center">
+                    <button onclick="CromApp.navigate('inicio')" class="bg-indigo-600 text-white px-10 py-4 rounded-xl font-bold hover:bg-indigo-700 transition-colors">Explorar Ferramentas</button>
+                 </div>
             </section>
         </div>
     `,
     HistoricoView: () => `
         <div class="animate-in slide-in-from-bottom-4 duration-500">
             <section class="max-w-4xl mx-auto px-6 py-20">
-                <h2 class="text-3xl font-black mb-8">Histórico Local</h2>
+                <div class="flex items-center justify-between mb-8">
+                    <h2 class="text-3xl font-black">Histórico Local</h2>
+                    <button onclick="CromApp.clearHistory()" class="text-sm text-red-500 hover:text-red-700 font-bold">Limpar</button>
+                </div>
                 <p class="text-slate-500 mb-8">Seus arquivos processados recentemente (Metadados apenas).</p>
                 
                 <div id="historyList" class="space-y-4">
@@ -140,8 +149,8 @@ window.CromApp.Components = {
         </div>
     `,
     Footer: () => `
-        <footer class="py-16 px-6 text-center border-t dark:border-slate-800 mt-20">
-            <p class="text-slate-400 text-xs uppercase tracking-widest">© 2026 Crom Tools. Processamento Híbrido.</p>
+        <footer class="py-12 px-6 text-center border-t dark:border-slate-800 mt-20 bg-white dark:bg-slate-950">
+            <p class="text-slate-400 text-xs font-bold uppercase tracking-widest">© 2026 Crom Tools • Local First</p>
         </footer>
     `
 };

@@ -5,6 +5,7 @@ window.CromApp.registerTool({
     desc: 'Codifique e decodifique textos e arquivos para Base64.',
     icon: 'binary',
     color: 'bg-purple-500',
+    category: 'Dev',
     tags: ['base64', 'encode', 'decode', 'texto', 'arquivo'],
     render: () => `
         <div class="flex flex-col gap-6">
