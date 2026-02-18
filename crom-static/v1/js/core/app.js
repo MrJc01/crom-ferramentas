@@ -166,18 +166,29 @@ const renderCards = () => {
     if (filtered.length === 0) return `<div class="col-span-full py-20 text-center text-slate-400">Nenhuma ferramenta encontrada.</div>`;
 
     return filtered.map(tool => `
-        <div class="tool-card group p-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 hover:shadow-xl transition-all cursor-pointer relative overflow-hidden" 
+        <div class="tool-card group p-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 hover:shadow-2xl hover:shadow-indigo-500/10 dark:hover:shadow-indigo-500/5 transition-all cursor-pointer relative overflow-hidden flex flex-col h-full" 
              onclick="CromApp.openTool('${tool.id}')">
             
-            <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-300 dark:text-slate-600 bg-slate-50 dark:bg-slate-950 px-2 py-1 rounded border dark:border-slate-800">${tool.category}</span>
+            <div class="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <!-- Exec Badge -->
+                <span class="text-[10px] font-bold uppercase tracking-wider ${tool.requiresBackend ? 'text-amber-600 bg-amber-50 dark:bg-amber-900/30' : 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30'} px-2 py-1 rounded border border-slate-200 dark:border-transparent">
+                    ${tool.requiresBackend ? 'Server' : 'Browser'}
+                </span>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded border dark:border-slate-700">${tool.category}</span>
             </div>
 
-            <div class="${tool.color} w-12 h-12 rounded-xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform shadow-lg shadow-${tool.color.replace('bg-', '')}/30">
-                <i data-lucide="${tool.icon}"></i>
+            <div class="${tool.color} w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-6 group-hover:scale-110 group-hover:-rotate-3 transition-transform shadow-lg shadow-indigo-500/20">
+                <i data-lucide="${tool.icon}" class="w-7 h-7"></i>
             </div>
-            <h3 class="text-xl font-bold mb-2 text-slate-800 dark:text-slate-100">${tool.title}</h3>
-            <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">${tool.desc}</p>
+            
+            <h3 class="text-xl font-bold mb-2 text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">${tool.title}</h3>
+            <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed flex-1">${tool.desc}</p>
+            
+            <!-- Pseudo-footer for card to balance height -->
+            <div class="mt-6 pt-4 border-t border-slate-50 dark:border-slate-800/50 flex items-center justify-between text-xs text-slate-400">
+                <span class="font-medium group-hover:text-indigo-500 transition-colors">Abrir Ferramenta</span>
+                <i data-lucide="arrow-right" class="w-4 h-4 -translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all text-indigo-500"></i>
+            </div>
         </div>
     `).join('');
 };
