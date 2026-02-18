@@ -1,0 +1,101 @@
+# 🛠️ Crom Tools
+
+Ferramentas web privadas e de alto desempenho, focadas na filosofia *Local-First*.
+
+## 🏗️ Arquitetura do Ecossistema
+
+O sistema é dividido em três pilares principais:
+
+1.  **Frontend (`tools.crom.run`)**:
+    -   Desenvolvido em HTML/JS puro com TailwindCSS.
+    -   **Lógica Híbrida**: Prioriza o processamento no navegador (Web Workers, Canvas). Se o arquivo for muito grande ou a tarefa complexa (ex: Markdown para PDF pixel-perfect), delega para a API.
+
+2.  **Backend (`tools-api.crom.run`)**:
+    -   Escrito em **Go (Golang)** com framework **Fiber**.
+    -   **Browser Pooling**: Mantém uma instância do Chrome Headless (`go-rod`) quente para gerar PDFs instantaneamente.
+    -   **Image Processing**: Processamento robusto de imagens (resize/convert) server-side.
+    -   **Segurança**: Middleware de Whitelist Dinâmica e CORS restrito.
+
+3.  **CDN Privada (`static.crom.run`)**:
+    -   Servida via **Caddy**.
+    -   Armazena bibliotecas (Marked.js), ícones e estilos globais com cache agressivo.
+
+---
+
+## 🚀 Como Executar
+
+### Pré-requisitos
+- **Go 1.21+**
+- **Google Chrome** ou **Chromium** instalado no servidor (para o `go-rod`).
+- **Caddy** (para simular a infraestrutura completa).
+
+### 1. Backend (API)
+```bash
+cd crom-tools-api
+go mod tidy
+
+# Crie o arquivo de whitelist se não existir
+echo "127.0.0.1" > whitelist.txt
+
+# Execute o servidor
+PORT=3000 go run .
+```
+
+### 2. Infraestrutura (Caddy)
+```bash
+# Na raiz do projeto
+caddy run
+```
+*Certifique-se de configurar seu `/etc/hosts` para apontar `tools.crom.run`, `static.crom.run` e `tools-api.crom.run` para `127.0.0.1` se estiver testando localmente.*
+
+---
+
+## ⚙️ Configuração
+
+### Variáveis de Ambiente
+| Variável | Descrição | Padrão |
+| :--- | :--- | :--- |
+| `PORT` | Porta do servidor Go | `3000` |
+| `WHITELIST_FILE` | Caminho do arquivo de IPs permitidos | `whitelist.txt` |
+| `ALLOWED_IPS` | Lista inicial de IPs (fallback) | `127.0.0.1` |
+
+### Whitelist Dinâmica
+O backend monitora o arquivo `whitelist.txt`. Para adicionar um IP sem reiniciar o servidor, basta editar este arquivo:
+```txt
+127.0.0.1
+::1
+192.168.1.50
+# Comentários são permitidos
+```
+
+---
+
+## 🛡️ Segurança
+
+### Content Security Policy (CSP)
+O `Caddyfile` aplica headers rigorosos:
+- Scripts apenas de origens confiáveis (`self`, `cdn.tailwindcss.com`, `unpkg.com`, `static.crom.run`).
+- HSTS ativado (`max-age=31536000`).
+
+### Privacidade
+A API foi desenhada para não reter dados. Arquivos processados são enviados via stream diretamente de volta para o cliente, sem persistência em disco (exceto buffers temporários de memória).
+
+---
+
+## 📂 Estrutura de Pastas
+
+```
+.
+├── crom-static/        # CDN (JS, CSS, Assets)
+│   └── v1/
+│       └── js/
+│           ├── marked.min.js
+│           └── worker-image.js
+├── crom-tools-api/     # Backend Go
+│   ├── main.go         # Entry point & Config
+│   ├── routes.go       # Endpoints (PDF, Imagem)
+│   └── middleware.go   # Whitelist & Logging
+├── index.html          # Frontend Único (SPA-like)
+├── Caddyfile           # Configuração do Proxy
+└── README.md           # Documentação
+```

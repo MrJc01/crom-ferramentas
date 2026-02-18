@@ -1,0 +1,33 @@
+nohup: ignorando entrada
+2026/02/18 01:55:26 Browser instance launched and connected for pooling.
+2026/02/18 01:55:26 Whitelist updated. Allowed IPs: 2
+2026/02/18 01:55:26 Starting Crom Tools API on port 3000
+
+ ┌───────────────────────────────────────────────────┐ 
+ │                  Fiber v2.52.11                   │ 
+ │               http://127.0.0.1:3000               │ 
+ │       (bound on host 0.0.0.0 and port 3000)       │ 
+ │                                                   │ 
+ │ Handlers ............ 10  Processes ........... 1 │ 
+ │ Prefork ....... Disabled  PID ............. 58760 │ 
+ └───────────────────────────────────────────────────┘ 
+
+2026/02/18 01:55:56 Whitelist updated. Allowed IPs: 2
+2026/02/18 01:56:26 Whitelist updated. Allowed IPs: 2
+2026/02/18 01:56:56 Whitelist updated. Allowed IPs: 2
+2026/02/18 01:57:26 Whitelist updated. Allowed IPs: 2
+2026/02/18 01:57:56 Whitelist updated. Allowed IPs: 2
+2026/02/18 01:58:26 Whitelist updated. Allowed IPs: 2
+2026/02/18 01:58:56 Whitelist updated. Allowed IPs: 2
+2026/02/18 01:59:26 Whitelist updated. Allowed IPs: 2
+2026/02/18 01:59:56 Whitelist updated. Allowed IPs: 2
+2026/02/18 02:00:26 Whitelist updated. Allowed IPs: 2
+2026/02/18 02:00:56 Whitelist updated. Allowed IPs: 2
+2026/02/18 02:01:26 Whitelist updated. Allowed IPs: 2
+2026/02/18 02:01:57 Whitelist updated. Allowed IPs: 2
+2026/02/18 02:02:26 Whitelist updated. Allowed IPs: 2
+2026/02/18 02:02:56 Whitelist updated. Allowed IPs: 2
+2026/02/18 02:03:26 Whitelist updated. Allowed IPs: 2
+2026/02/18 02:03:56 Whitelist updated. Allowed IPs: 2
+2026/02/18 02:04:26 Whitelist updated. Allowed IPs: 2
+2026/02/18 02:04:56 Whitelist updated. Allowed IPs: 2

@@ -1,0 +1,53 @@
+{
+    # Global options
+    email your-email@example.com
+}
+
+# Static Assets CDN
+static.crom.run {
+    root * ./crom-static
+    file_server
+    encode gzip zstd
+    
+    # Aggressive caching for static assets
+    header /v1/* {
+        Cache-Control "public, max-age=31536000, immutable"
+        Access-Control-Allow-Origin "*"
+    }
+}
+
+# API Backend Proxy
+tools-api.crom.run {
+    reverse_proxy localhost:3000
+
+    # Basic security headers
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+    }
+}
+
+# Frontend (if served via Caddy)
+tools.crom.run {
+    root * .
+    file_server
+    encode gzip zstd
+
+    # Security Headers (Hardening)
+    header {
+        # HSTS (Strict-Transport-Security)
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        
+        # XSS Protection
+        X-XSS-Protection "1; mode=block"
+        
+        # Content Security Policy (CSP)
+        # Permitting: 'self', api domain, static domain, tailwind/icons CDNs if still used (yes they are), google fonts.
+        # Unsafe-inline/eval might be needed for some JS frameworks or the way index.html is built (app.init in script tag).
+        # We'll allow unsafe-inline for scripts/styles for now to avoid breaking the single-file nature, but it's a trade-off.
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com static.crom.run; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' http://localhost:3000 https://tools-api.crom.run;"
+        
+        # Referrer Policy
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+}
