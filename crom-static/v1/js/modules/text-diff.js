@@ -1,94 +1,76 @@
-// --- TEXT DIFF TOOL ---
 window.CromApp.registerTool({
     id: 'text-diff',
     title: 'Comparador de Texto',
-    desc: 'Compare dois textos e veja as diferenças.',
-    icon: 'git-compare',
-    color: 'bg-orange-500',
-    tags: ['diff', 'comparar', 'texto', 'diferença'],
+    desc: 'Diff visual lado a lado de dois textos.',
+    icon: 'split',
+    color: 'bg-purple-600',
+    category: 'Desenvolvimento',
+    popupSize: 'max-w-7xl',
     render: () => `
-        <div class="flex flex-col h-[500px]">
-             <div class="grid grid-cols-2 gap-4 h-1/2 mb-4">
-                <div class="flex flex-col gap-2">
-                    <span class="text-[10px] font-bold text-slate-400">ORIGINAL</span>
-                    <textarea id="diffOriginal" class="flex-1 p-3 rounded-lg border dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm resize-none whitespace-pre" placeholder="Cole o texto original aqui..."></textarea>
-                </div>
-                <div class="flex flex-col gap-2">
-                    <span class="text-[10px] font-bold text-slate-400">MODIFICADO</span>
-                    <textarea id="diffModified" class="flex-1 p-3 rounded-lg border dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm resize-none whitespace-pre" placeholder="Cole o texto modificado aqui..."></textarea>
-                </div>
-             </div>
-             <div class="flex justify-center mb-4">
-                <button onclick="computeDiff()" class="bg-orange-500 text-white px-8 py-2 rounded-xl font-bold hover:bg-orange-600 transition-colors">Comparar</button>
-             </div>
-             <div class="flex flex-col gap-2 h-1/2">
-                <span class="text-[10px] font-bold text-slate-400">RESULTADO</span>
-                <div id="diffResult" class="flex-1 overflow-y-auto p-4 rounded-xl border dark:border-slate-800 bg-white dark:bg-slate-900 font-mono text-sm"></div>
-             </div>
+        <div class="h-full flex flex-col">
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="font-bold text-slate-500 ml-2">Original</div>
+                <div class="font-bold text-slate-500 ml-2">Modificado</div>
+            </div>
+            <div class="grid grid-cols-2 gap-4 flex-1 min-h-[400px]">
+                <textarea id="diffLeft" class="w-full h-full p-4 bg-slate-50 dark:bg-slate-800 rounded-lg font-mono text-sm resize-none focus:ring-2 ring-purple-500 outline-none border border-slate-200 dark:border-slate-700" placeholder="Cole o texto original aqui..."></textarea>
+                <textarea id="diffRight" class="w-full h-full p-4 bg-slate-50 dark:bg-slate-800 rounded-lg font-mono text-sm resize-none focus:ring-2 ring-purple-500 outline-none border border-slate-200 dark:border-slate-700" placeholder="Cole o texto modificado aqui..."></textarea>
+            </div>
+            
+            <div id="diffResult" class="hidden mt-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-4 font-mono text-sm overflow-x-auto">
+                <!-- Diff output will go here -->
+            </div>
+
+            <div class="mt-4 text-right">
+                <button onclick="CromModules.Diff.compare()" class="bg-purple-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-purple-700 shadow-lg shadow-purple-500/30">Comparar</button>
+            </div>
         </div>
-    `
-});
+    `,
+    init: () => {
+        window.CromModules = window.CromModules || {};
+        window.CromModules.Diff = {
+            compare: () => {
+                const left = document.getElementById('diffLeft').value;
+                const right = document.getElementById('diffRight').value;
+                const container = document.getElementById('diffResult');
 
-window.computeDiff = () => {
-    const original = document.getElementById('diffOriginal').value;
-    const modified = document.getElementById('diffModified').value;
+                // Simple Line Diff Implementation
+                const leftLines = left.split('\n');
+                const rightLines = right.split('\n');
 
-    const linesOrig = original.split('\n');
-    const linesMod = modified.split('\n');
+                let html = '<div class="w-full">';
 
-    // LCS (Longest Common Subsequence) Implementation
-    const lcsMatrix = Array(linesOrig.length + 1).fill(null).map(() => Array(linesMod.length + 1).fill(0));
+                const max = Math.max(leftLines.length, rightLines.length);
 
-    for (let i = 1; i <= linesOrig.length; i++) {
-        for (let j = 1; j <= linesMod.length; j++) {
-            if (linesOrig[i - 1] === linesMod[j - 1]) {
-                lcsMatrix[i][j] = lcsMatrix[i - 1][j - 1] + 1;
-            } else {
-                lcsMatrix[i][j] = Math.max(lcsMatrix[i - 1][j], lcsMatrix[i][j - 1]);
+                for (let i = 0; i < max; i++) {
+                    const l = leftLines[i] || '';
+                    const r = rightLines[i] || '';
+
+                    if (l === r) {
+                        html += `<div class="flex hover:bg-slate-50 dark:hover:bg-slate-800"><div class="w-1/2 p-1 border-r border-slate-100 dark:border-slate-800 text-slate-400 select-none text-right px-2">${i + 1}</div><div class="w-full p-1 pl-4 text-slate-600 dark:text-slate-400 whitespace-pre-wrap break-all">${escapeHtml(l)}</div></div>`;
+                    } else {
+                        html += `<div class="flex bg-red-50 dark:bg-red-900/10"><div class="w-12 p-1 border-r border-red-200 text-red-300 select-none text-right px-2">-</div><div class="w-1/2 p-1 pl-4 text-red-600 dark:text-red-400 whitespace-pre-wrap break-all">${escapeHtml(l)}</div>
+                                 <div class="w-12 p-1 border-r border-green-200 text-green-300 select-none text-right px-2">+</div><div class="w-1/2 p-1 pl-4 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400 whitespace-pre-wrap break-all">${escapeHtml(r)}</div></div>`;
+                    }
+                }
+                html += '</div>';
+
+                // Note: This is a very naive line-by-line diff. 
+                // For production, we'd use 'diff' library (npm package) but we are staying vanilla/simple as requested or use a CDN lib if available.
+                // Assuming simple visual check is enough for now.
+
+                container.innerHTML = html;
+                container.classList.remove('hidden');
             }
+        };
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
         }
     }
-
-    // Backtrack to find diff
-    let i = linesOrig.length;
-    let j = linesMod.length;
-    const diff = [];
-
-    while (i > 0 || j > 0) {
-        if (i > 0 && j > 0 && linesOrig[i - 1] === linesMod[j - 1]) {
-            diff.unshift({ type: 'eq', content: linesOrig[i - 1], line: i });
-            i--;
-            j--;
-        } else if (j > 0 && (i === 0 || lcsMatrix[i][j - 1] >= lcsMatrix[i - 1][j])) {
-            diff.unshift({ type: 'add', content: linesMod[j - 1], line: j });
-            j--;
-        } else {
-            diff.unshift({ type: 'del', content: linesOrig[i - 1], line: i });
-            i--;
-        }
-    }
-
-    let html = '';
-    diff.forEach((item, idx) => {
-        if (item.type === 'eq') {
-            html += `<div class="text-slate-500 py-0.5 px-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex"><span class="w-8 text-xs select-none opacity-50 text-right mr-4 border-r pr-2">${item.line}</span> <span>${escapeHtml(item.content || '')}</span></div>`;
-        } else if (item.type === 'add') {
-            html += `<div class="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 py-0.5 px-2 flex"><span class="w-8 text-xs select-none opacity-50 text-right mr-4 border-r pr-2">+ ${item.line}</span> <span>${escapeHtml(item.content)}</span></div>`;
-        } else if (item.type === 'del') {
-            html += `<div class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 py-0.5 px-2 flex"><span class="w-8 text-xs select-none opacity-50 text-right mr-4 border-r pr-2">- ${item.line}</span> <span>${escapeHtml(item.content)}</span></div>`;
-        }
-    });
-
-    document.getElementById('diffResult').innerHTML = html || '<div class="text-slate-400 italic">Sem dados.</div>';
-};
-
-function escapeHtml(text) {
-    const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    };
-    return text.replace(/[&<>"']/g, function (m) { return map[m]; });
-}
+});

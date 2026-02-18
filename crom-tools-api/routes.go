@@ -69,13 +69,12 @@ func ConvertPDF(c *fiber.Ctx) error {
     // Note: We need to use a context-aware browser clone or just control the page operations with context ideally.
     // Rod's `MustPage` doesn't take context directly but we can use `Context` on the browser.
     
-    // Acquire semaphore
-    BrowserSemaphore <- struct{}{}
-    defer func() { <-BrowserSemaphore }()
+    // Acquire Page from Pool
+    page := GetPage()
+    defer PutPage(page)
 
-    // Use context for the page
-    page := Browser.Context(ctx).MustIncognito().MustPage("about:blank")
-    defer page.MustClose() 
+    // Context for timeout
+    page.Context(ctx) 
     
     // Set content
 	if err := page.SetDocumentContent(req.HTML); err != nil {

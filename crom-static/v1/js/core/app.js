@@ -112,6 +112,12 @@ window.CromApp.state = {
 
 // Tool Registry
 window.CromApp.registerTool = (toolConfig) => {
+    // Check Backend Requirement
+    if (toolConfig.requiresBackend && window.CromApp.services && !window.CromApp.services.backend.enabled) {
+        console.warn(`[CromApp] Tool '${toolConfig.title}' skipped: Backend required but disabled.`);
+        return;
+    }
+
     // Default category if missing
     if (!toolConfig.category) toolConfig.category = 'Outros';
     window.CromApp.state.tools.push(toolConfig);
@@ -184,6 +190,12 @@ window.CromApp.setCategory = (cat) => {
 // Application Methods
 window.CromApp.init = () => {
     window.CromApp.initDB().then(() => window.CromApp.render());
+
+    // Expose Global API
+    window.CromTools = {
+        launch: (toolId) => window.CromApp.openTool(toolId)
+    };
+
     // Global Escape Listener
     window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') window.CromApp.closeTool();
@@ -269,11 +281,27 @@ window.CromApp.openTool = (id) => {
     const tool = window.CromApp.state.tools.find(t => t.id === id);
     if (!tool) return;
 
+    window.CromApp.state.activeToolId = id; // Track active tool
+
     document.getElementById('toolTitle').innerText = tool.title;
     document.getElementById('toolDesc').innerText = tool.desc;
     document.getElementById('toolIconContainer').className = `p-2 rounded-lg text-white ${tool.color}`;
     document.getElementById('toolIconContainer').innerHTML = `<i data-lucide="${tool.icon}"></i>`;
     document.getElementById('toolContent').innerHTML = tool.render();
+
+    // DYNAMIC POPUP SIZING & STYLING
+    const modalContainer = document.querySelector('#toolPopup > div > div'); // The inner card div
+    // Reset to base classes + default or custom size
+    const baseClasses = "bg-white dark:bg-slate-900 w-full rounded-3xl shadow-2xl flex flex-col relative overflow-hidden animate-in zoom-in duration-300 transition-all";
+    const sizeClass = tool.popupSize || "max-w-5xl";
+    modalContainer.className = `${baseClasses} ${sizeClass} ${tool.customClass || ''}`;
+
+    // LIFECYCLE: onOpen
+    if (tool.onOpen && typeof tool.onOpen === 'function') {
+        setTimeout(() => {
+            try { tool.onOpen(); } catch (e) { console.error("Error in onOpen:", e); }
+        }, 0);
+    }
 
     document.getElementById('toolStatus').classList.add('hidden');
     document.body.classList.add('tool-active');
@@ -300,6 +328,16 @@ window.CromApp.openTool = (id) => {
 };
 
 window.CromApp.closeTool = () => {
+    // LIFECYCLE: onClose
+    const id = window.CromApp.state.activeToolId;
+    if (id) {
+        const tool = window.CromApp.state.tools.find(t => t.id === id);
+        if (tool && tool.onClose && typeof tool.onClose === 'function') {
+            try { tool.onClose(); } catch (e) { console.error("Error in onClose:", e); }
+        }
+        window.CromApp.state.activeToolId = null;
+    }
+
     document.body.classList.remove('tool-active');
 };
 

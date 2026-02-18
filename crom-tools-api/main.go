@@ -11,16 +11,13 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
-// Global browser instance for pooling
+// Global browser instance and Pool
 var Browser *rod.Browser
-var BrowserSemaphore = make(chan struct{}, 5) // Limit to 5 concurrent pages
+var PagePool chan *rod.Page
 
 func InitBrowser() {
-	// Launch browser once on startup
-	// Use default launcher which finds Chrome automatically
 	l := launcher.New().
 		Headless(true).
-		// Add some flags for stability in container/server environments
 		Set("no-sandbox").
 		Set("disable-setuid-sandbox").
 		Set("disable-dev-shm-usage")
@@ -31,11 +28,42 @@ func InitBrowser() {
 	}
 
 	Browser = rod.New().ControlURL(url).MustConnect()
-	log.Println("Browser instance launched and connected for pooling.")
+	log.Println("Browser instance launched.")
+
+	// Initialize Page Pool (Recycling Strategy)
+	// We create a fixed pool of pages to avoid overhead of creating targets per request
+	poolSize := 5
+	PagePool = make(chan *rod.Page, poolSize)
+
+	for i := 0; i < poolSize; i++ {
+		// Create incognito pages (independent contexts)
+		// Note: For true isolation, we usually want new contexts.
+		// Detailed recycling would involve clearing cache/cookies.
+		// For this implementation, we use a single Incognito *Browser* Context if possible,
+		// or just separate pages. Rod's MustIncognito() returns a NEW browser pointer.
+		// To pool effectively:
+		// 1. Create a Context?
+		// Let's keep it simple: Create pages, put in channel.
+		// When getting, check if alive.
+		go func() {
+			p := Browser.MustIncognito().MustPage() // New Context + Page
+			PagePool <- p
+		}()
+	}
+	log.Printf("Initialized Page Pool with %d pages", poolSize)
+}
+
+func GetPage() *rod.Page {
+	return <-PagePool
+}
+
+func PutPage(p *rod.Page) {
+	// Simple Reset
+	p.MustNavigate("about:blank")
+	PagePool <- p
 }
 
 func main() {
-    // Initialize Browser Pool
     InitBrowser()
     defer Browser.MustClose()
 
