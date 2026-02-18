@@ -1,59 +1,50 @@
-// Image Processing Worker - Enhanced for Batch Processing
+// Image Processing Worker - Optimized for ArrayBuffer
 self.onmessage = async function (e) {
-    const { files, file, action, format } = e.data;
+    const { buffer, type, action, format, name } = e.data;
 
-    // Normalize input: handle both single file and array of files
-    const inputFiles = files ? files : (file ? [file] : []);
+    try {
+        if (!buffer) throw new Error("No buffer provided");
 
-    if (inputFiles.length === 0) {
-        self.postMessage({ success: false, error: "No files provided" });
-        return;
+        // Report progress (optional, but good for UI if we hook it up later)
+        self.postMessage({ type: 'progress', status: 'decoding' });
+
+        // Create Blob from ArrayBuffer
+        const blobInput = new Blob([buffer], { type: type });
+
+        // Create Bitmap
+        const bitmap = await createImageBitmap(blobInput);
+
+        // Prepare Canvas
+        const { width, height } = bitmap;
+        const offscreen = new OffscreenCanvas(width, height);
+        const ctx = offscreen.getContext('2d');
+
+        // Draw
+        ctx.drawImage(bitmap, 0, 0);
+
+        // Convert to output format
+        // Default to PNG if not specified
+        const outFormat = format === 'jpeg' || format === 'jpg' ? 'image/jpeg' : 'image/png';
+        const quality = outFormat === 'image/jpeg' ? 0.90 : undefined;
+
+        const blobOutput = await offscreen.convertToBlob({
+            type: outFormat,
+            quality: quality
+        });
+
+        // Send Success
+        self.postMessage({
+            success: true,
+            type: 'result',
+            blob: blobOutput,
+            name: name
+        });
+
+    } catch (error) {
+        self.postMessage({
+            success: false,
+            type: 'result',
+            error: error.message
+        });
     }
-
-    const total = inputFiles.length;
-    let processed = 0;
-
-    for (let i = 0; i < total; i++) {
-        const currentFile = inputFiles[i];
-        try {
-            // Report start of processing for this file
-            self.postMessage({ type: 'progress', index: i, total: total, status: 'processing' });
-
-            const bitmap = await createImageBitmap(currentFile);
-            const offscreen = new OffscreenCanvas(bitmap.width, bitmap.height);
-            const ctx = offscreen.getContext('2d');
-
-            ctx.drawImage(bitmap, 0, 0);
-
-            // Conversion logic
-            const blob = await offscreen.convertToBlob({
-                type: format === 'png' ? 'image/png' : 'image/jpeg',
-                quality: 0.85
-            });
-
-            // Send result for this specific file
-            self.postMessage({
-                success: true,
-                blob: blob,
-                fileName: currentFile.name,
-                index: i,
-                total: total,
-                type: 'result'
-            });
-
-            processed++;
-        } catch (error) {
-            self.postMessage({
-                success: false,
-                error: error.message,
-                fileName: currentFile.name,
-                index: i,
-                total: total,
-                type: 'result'
-            });
-        }
-    }
-
-    // Signal batch completion
-    self.postMessage({ type: 'complete', processed: processed, total: total });
 };

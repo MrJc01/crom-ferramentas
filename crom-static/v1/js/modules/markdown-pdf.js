@@ -1,4 +1,10 @@
 // --- MARKDOWN TO PDF TOOL ---
+if (typeof marked !== 'undefined') {
+    marked.setOptions({
+        gfm: true,
+        breaks: true
+    });
+}
 window.CromApp.registerTool({
     id: 'md-pdf',
     title: 'Markdown → PDF',

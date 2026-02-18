@@ -1,6 +1,87 @@
-// --- MAIN APPLICATION LOGIC ---
+// --- WORKER POOL ---
+class WorkerPool {
+    constructor(workerScript, size = 4) {
+        this.workerScript = workerScript;
+        this.size = size;
+        this.workers = [];
+        this.queue = [];
+        this.active = 0;
+        this.init();
+    }
 
+    init() {
+        for (let i = 0; i < this.size; i++) {
+            const worker = new Worker(this.workerScript);
+            worker.onmessage = (e) => this.onWorkerMessage(worker, e);
+            worker.onerror = (e) => this.onWorkerError(worker, e);
+            this.workers.push({
+                worker: worker,
+                busy: false,
+                resolve: null,
+                reject: null
+            });
+        }
+    }
+
+    run(data, transferList = []) {
+        return new Promise((resolve, reject) => {
+            const task = { data, transferList, resolve, reject };
+            this.queue.push(task);
+            this.processQueue();
+        });
+    }
+
+    processQueue() {
+        if (this.queue.length === 0) return;
+
+        const availableWorker = this.workers.find(w => !w.busy);
+        if (!availableWorker) return;
+
+        const task = this.queue.shift();
+        availableWorker.busy = true;
+        availableWorker.resolve = task.resolve;
+        availableWorker.reject = task.reject;
+        this.active++;
+
+        availableWorker.worker.postMessage(task.data, task.transferList);
+    }
+
+    onWorkerMessage(workerRaw, e) {
+        const workerObj = this.workers.find(w => w.worker === workerRaw);
+        if (!workerObj) return;
+
+        if (e.data.type === 'result' || e.data.success !== undefined) {
+            if (e.data.success) {
+                if (workerObj.resolve) workerObj.resolve(e.data);
+            } else {
+                if (workerObj.reject) workerObj.reject(e.data.error || "Worker reported failure");
+            }
+            this.releaseWorker(workerObj);
+        } else if (e.data.type === 'progress') {
+            // Optional: Handle progress
+        }
+    }
+
+    onWorkerError(workerRaw, e) {
+        const workerObj = this.workers.find(w => w.worker === workerRaw);
+        if (workerObj) {
+            if (workerObj.reject) workerObj.reject(e.message);
+            this.releaseWorker(workerObj);
+        }
+    }
+
+    releaseWorker(workerObj) {
+        workerObj.busy = false;
+        workerObj.resolve = null;
+        workerObj.reject = null;
+        this.active--;
+        this.processQueue();
+    }
+}
+
+// --- MAIN APPLICATION LOGIC ---
 window.CromApp = window.CromApp || {};
+window.CromApp.WorkerPool = WorkerPool;
 
 window.CromApp.state = {
     currentView: 'inicio',

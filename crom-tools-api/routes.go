@@ -17,6 +17,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// Task Queues to limit heavy operations
+var OCRQueue = make(chan struct{}, 1)   // Process 1 OCR task at a time
+var VideoQueue = make(chan struct{}, 1) // Process 1 Video task at a time
+
 func SetupRoutes(app *fiber.App) {
 	v1 := app.Group("/v1")
 
@@ -55,6 +59,10 @@ func ConvertPDF(c *fiber.Ctx) error {
     if Browser == nil {
          return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Browser service not initialized"})
     }
+
+    // Acquire semaphore
+    BrowserSemaphore <- struct{}{}
+    defer func() { <-BrowserSemaphore }()
 
     // Incognito page for privacy
     page := Browser.MustIncognito().MustPage("about:blank")
@@ -166,6 +174,10 @@ func ProcessHeavyOCR(c *fiber.Ctx) error {
 	}
 	defer os.Remove(tempFile) // Cleanup
 
+    // Acquire Task Queue
+    OCRQueue <- struct{}{}
+    defer func() { <-OCRQueue }()
+
 	// Run Tesseract: tesseract input.png stdout
 	cmd := exec.Command("tesseract", tempFile, "stdout")
 	
@@ -202,6 +214,10 @@ func ProcessHeavyVideo(c *fiber.Ctx) error {
 	}
 	defer os.Remove(inputPath)
 	defer os.Remove(outputPath)
+
+    // Acquire Task Queue
+    VideoQueue <- struct{}{}
+    defer func() { <-VideoQueue }()
 
 	// Run FFmpeg: Convert to MP4 (H.264 + AAC)
 	// ffmpeg -i input.mov -c:v libx264 -c:a aac output.mp4

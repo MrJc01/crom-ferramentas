@@ -13,6 +13,7 @@ import (
 
 // Global browser instance for pooling
 var Browser *rod.Browser
+var BrowserSemaphore = make(chan struct{}, 5) // Limit to 5 concurrent pages
 
 func InitBrowser() {
 	// Launch browser once on startup
@@ -51,8 +52,9 @@ func main() {
     // Middleware
     // Using default logger for now, can switch to structured if needed but Fiber's logger is decent.
     // User requested "Logs Estruturados". Let's enhance this.
+    // User requested "Logs Estruturados". Let's enhance this.
     app.Use(logger.New(logger.Config{
-        Format: "{\"time\":\"${time}\", \"ip\":\"${ip}\", \"status\":${status}, \"method\":\"${method}\", \"path\":\"${path}\", \"latency\":\"${latency}\"}\n",
+        Format: "{\"time\":\"${time}\", \"ip\":\"${ip}\", \"status\":${status}, \"method\":\"${method}\", \"path\":\"${path}\", \"latency\":\"${latency}\", \"bytes_received\": ${bytes_received}, \"bytes_sent\": ${bytes_sent}}\n",
         TimeFormat: "2006-01-02T15:04:05Z07:00",
     }))
 

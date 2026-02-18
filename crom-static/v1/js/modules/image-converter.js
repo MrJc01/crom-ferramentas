@@ -67,25 +67,38 @@ async function processImageServer(file) {
     return await response.blob();
 }
 
+let imageWorkerPool = null;
+function getImageWorkerPool() {
+    if (!imageWorkerPool) {
+        const concurrency = navigator.hardwareConcurrency || 4;
+        imageWorkerPool = new window.CromApp.WorkerPool('crom-static/v1/js/worker-image.js', concurrency);
+    }
+    return imageWorkerPool;
+}
+
 function processImageLocal(file) {
     return new Promise((resolve, reject) => {
         if (window.Worker) {
-            const worker = new Worker('crom-static/v1/js/worker-image.js');
-            worker.postMessage({ file: file, action: 'convert', format: 'png' });
+            // Read file as ArrayBuffer first
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const buffer = e.target.result;
 
-            worker.onmessage = function (e) {
-                if (e.data.type === 'result' || e.data.success) {
-                    if (e.data.success) {
-                        resolve(e.data.blob);
-                    } else {
-                        reject(e.data.error);
-                    }
-                } else if (e.data.success === false) {
-                    reject(e.data.error);
-                }
-                worker.terminate();
+                // Use Pool
+                getImageWorkerPool().run({
+                    buffer: buffer,
+                    type: file.type,
+                    name: file.name,
+                    action: 'convert',
+                    format: 'png'
+                }, [buffer]).then(data => {
+                    resolve(data.blob);
+                }).catch(err => {
+                    reject(err);
+                });
             };
-            worker.onerror = (e) => reject(e);
+            reader.onerror = (e) => reject("Failed to read file: " + e);
+            reader.readAsArrayBuffer(file);
         } else {
             reject("Web Workers not supported");
         }
