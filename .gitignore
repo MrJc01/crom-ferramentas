@@ -1,0 +1,26 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Go
+crom-tools-api/crom-tools-api
+crom-tools-api/server
+*.exe
+*.test
+*.prof
+
+# Logs
+*.log
+backend.log
+crom-tools-api/backend.log
+
+# System
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Build artifacts
+# Keeping generated CSS for now to ensure repo is usable without build step
+# crom-static/v1/css/style.css
