@@ -22,14 +22,15 @@ O sistema é dividido em três pilares principais:
 
 ---
 
-## 🚀 Como Executar
+## 🚀 Como Executar (Modo Desenvolvimento)
 
 ### Pré-requisitos
 - **Go 1.21+**
 - **Google Chrome** ou **Chromium** instalado no servidor (para o `go-rod`).
 - **Caddy** (para simular a infraestrutura completa).
 
-### 1. Backend (API)
+### 1. Backend API (Go)
+Para iniciar:
 ```bash
 cd crom-tools-api
 go mod tidy
@@ -37,16 +38,29 @@ go mod tidy
 # Crie o arquivo de whitelist se não existir
 echo "127.0.0.1" > whitelist.txt
 
-# Execute o servidor
+# Inicia o servidor na porta 3000
 PORT=3000 go run .
 ```
+> **🛑 Para desligar:** Pressione `Ctrl + C` no terminal onde o comando está rodando.
 
-### 2. Infraestrutura (Caddy)
+### 2. Frontend e Proxy (Caddy)
+O Caddy serve os arquivos estáticos e gerencia o roteamento local.
+Para iniciar:
 ```bash
 # Na raiz do projeto
 caddy run
 ```
-*Certifique-se de configurar seu `/etc/hosts` para apontar `tools.crom.run`, `static.crom.run` e `tools-api.crom.run` para `127.0.0.1` se estiver testando localmente.*
+> **🛑 Para desligar:** Pressione `Ctrl + C` no terminal do Caddy.
+
+#### ⚠️ Dica: Erro "address already in use"
+Se o Caddy retornar o erro `bind: address already in use` (geralmente na porta `2019` da API de administração ou nas portas `80/443`), significa que uma instância do Caddy já está rodando em segundo plano. 
+Para resolver isso e desligar a instância zumbi, execute:
+```bash
+caddy stop
+```
+Após isso, tente rodar `caddy run` novamente.
+
+*Certifique-se de configurar seu `/etc/hosts` para apontar `tools.crom.run`, `static.crom.run` e `tools-api.crom.run` para `127.0.0.1` se estiver testando localmente com o Caddy.*
 
 ---
 

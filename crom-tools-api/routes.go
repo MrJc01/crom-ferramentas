@@ -140,6 +140,16 @@ func ProcessImage(c *fiber.Ctx) error {
 		targetFormat = format
 	}
 
+    qualityStr := c.FormValue("quality") // Expected 0.01 to 1.00 from JS
+    qualityInt := 90
+    if qualityStr != "" {
+        var qf float64
+        fmt.Sscanf(qualityStr, "%f", &qf)
+        if qf > 0 && qf <= 1 {
+            qualityInt = int(qf * 100)
+        }
+    }
+
 	// Use io.Pipe to stream response without buffering entire result in RAM
 	pr, pw := io.Pipe()
 
@@ -150,12 +160,15 @@ func ProcessImage(c *fiber.Ctx) error {
 		case "png":
 			err = png.Encode(pw, processedImg)
 		case "jpg", "jpeg":
-			err = jpeg.Encode(pw, processedImg, &jpeg.Options{Quality: 90}) // Higher quality for strip
+			err = jpeg.Encode(pw, processedImg, &jpeg.Options{Quality: qualityInt}) 
+        case "webp":
+            // Fallback to JPEG if native webp encoder missing without CGO 
+            err = jpeg.Encode(pw, processedImg, &jpeg.Options{Quality: qualityInt})
+            targetFormat = "jpeg" 
 		default:
-			err = jpeg.Encode(pw, processedImg, &jpeg.Options{Quality: 90})
+			err = jpeg.Encode(pw, processedImg, &jpeg.Options{Quality: qualityInt})
 		}
 		if err != nil {
-			// Log error, but cannot write to stream easily as header is sent
 			fmt.Println("Error encoding image:", err)
 		}
 	}()

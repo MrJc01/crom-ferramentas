@@ -1,10 +1,10 @@
 {
-    # Global options
-    email your-email@example.com
+    # Modo de desenvolvimento local (Sem certificados HTTPS estritos)
+    auto_https off
 }
 
-# Static Assets CDN
-static.crom.run {
+# Static Assets CDN (Localhost :8081)
+http://localhost:8081 {
     root * ./crom-static
     file_server
     encode gzip zstd
@@ -16,8 +16,8 @@ static.crom.run {
     }
 }
 
-# API Backend Proxy
-tools-api.crom.run {
+# API Backend Proxy (Localhost :8082)
+http://localhost:8082 {
     reverse_proxy localhost:3000
 
     # Basic security headers
@@ -27,30 +27,21 @@ tools-api.crom.run {
     }
 }
 
-# Frontend (if served via Caddy)
-tools.crom.run {
+# Frontend (Localhost :8080)
+http://localhost:8080 {
     root * .
     file_server
     encode gzip zstd
 
     # Security Headers (Hardening)
     header {
-        # HSTS (Strict-Transport-Security)
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-        
-        # XSS Protection
         X-XSS-Protection "1; mode=block"
         
-        # Content Security Policy (CSP)
-        # Permitting: 'self', api domain, static domain, tailwind/icons CDNs if still used (yes they are), google fonts.
-        # Unsafe-inline/eval might be needed for some JS frameworks or the way index.html is built (app.init in script tag).
-        # We'll allow unsafe-inline for scripts/styles for now to avoid breaking the single-file nature, but it's a trade-off.
-        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com static.crom.run; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' http://localhost:3000 https://tools-api.crom.run;"
+        # Corrigindo CSP para permitir execução segura na borda e Google Tags
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com static.crom.run https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://crom.run https://images.unsplash.com; connect-src 'self' http://localhost:3000 http://localhost:8082 https://tools-api.crom.run https://cloudflare-dns.com https://dns.google https://freeipapi.com https://rdap.arin.net https://api.allorigins.win;"
         
-        # Referrer Policy
         Referrer-Policy "strict-origin-when-cross-origin"
-
-        # Permissions Policy
         Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
     }
 }

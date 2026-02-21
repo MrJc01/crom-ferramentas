@@ -302,10 +302,31 @@ window.CromApp.openTool = (id) => {
 
     // DYNAMIC POPUP SIZING & STYLING
     const modalContainer = document.querySelector('#toolPopup > div > div'); // The inner card div
+    const outerContainer = document.querySelector('#toolPopup > div'); // The min-h-screen wrap
+
     // Reset to base classes + default or custom size
-    const baseClasses = "bg-white dark:bg-slate-900 w-full rounded-3xl shadow-2xl flex flex-col relative overflow-hidden animate-in zoom-in duration-300 transition-all";
+    const baseClasses = "bg-white dark:bg-slate-900 w-full shadow-2xl flex flex-col relative overflow-hidden animate-in zoom-in duration-300 transition-all";
     const sizeClass = tool.popupSize || "max-w-5xl";
     modalContainer.className = `${baseClasses} ${sizeClass} ${tool.customClass || ''}`;
+
+    // Apply specific layout tweaks (e.g. fullscreen via tool properties)
+    window.CromApp.state.isFullscreen = (tool.layoutType === 'fullscreen');
+
+    if (window.CromApp.state.isFullscreen) {
+        outerContainer.className = "min-h-screen flex items-stretch justify-center md:p-0";
+        modalContainer.classList.add('rounded-none', 'min-h-screen', 'border-0');
+        modalContainer.classList.remove('rounded-3xl');
+        document.querySelector('button[onclick="CromApp.toggleFullscreen()"]')?.remove(); // Default already fullscreen, hide button or keep it as restore? 
+        // We'll keep it as restore if user wants to minimize a default fullscreen.
+        const btnIcon = document.querySelector('button[onclick="CromApp.toggleFullscreen()"] i');
+        if (btnIcon) btnIcon.setAttribute('data-lucide', 'minimize');
+    } else {
+        outerContainer.className = "min-h-screen flex items-center justify-center p-4 md:p-8";
+        modalContainer.classList.add('rounded-3xl');
+        modalContainer.classList.remove('rounded-none', 'min-h-screen', 'border-0');
+        const btnIcon = document.querySelector('button[onclick="CromApp.toggleFullscreen()"] i');
+        if (btnIcon) btnIcon.setAttribute('data-lucide', 'maximize');
+    }
 
     // LIFECYCLE: onOpen
     if (tool.onOpen && typeof tool.onOpen === 'function') {
@@ -338,6 +359,32 @@ window.CromApp.openTool = (id) => {
     }
 };
 
+window.CromApp.toggleFullscreen = () => {
+    const modalContainer = document.querySelector('#toolPopup > div > div'); // The inner card div
+    const outerContainer = document.querySelector('#toolPopup > div'); // The min-h-screen wrap
+    const btnIcon = document.querySelector('button[onclick="CromApp.toggleFullscreen()"] i');
+    const id = window.CromApp.state.activeToolId;
+    const tool = window.CromApp.state.tools.find(t => t.id === id);
+
+    window.CromApp.state.isFullscreen = !window.CromApp.state.isFullscreen;
+
+    // Toggle Layout Engine Tailwind Variables
+    if (window.CromApp.state.isFullscreen) {
+        // Expand
+        outerContainer.className = "min-h-screen flex items-stretch justify-center md:p-0";
+        modalContainer.className = "bg-white dark:bg-slate-900 w-full shadow-2xl flex flex-col relative overflow-hidden transition-all rounded-none min-h-screen border-0 " + (tool?.customClass || '');
+        if (btnIcon) btnIcon.setAttribute('data-lucide', 'minimize');
+    } else {
+        // Restore
+        const sizeClass = tool?.popupSize || "max-w-5xl";
+        outerContainer.className = "min-h-screen flex items-center justify-center p-4 md:p-8";
+        modalContainer.className = `bg-white dark:bg-slate-900 w-full shadow-2xl flex flex-col relative overflow-hidden animate-in zoom-in duration-300 transition-all rounded-3xl ${sizeClass} ${tool?.customClass || ''}`;
+        if (btnIcon) btnIcon.setAttribute('data-lucide', 'maximize');
+    }
+
+    lucide.createIcons();
+};
+
 window.CromApp.closeTool = () => {
     // LIFECYCLE: onClose
     const id = window.CromApp.state.activeToolId;
@@ -348,6 +395,9 @@ window.CromApp.closeTool = () => {
         }
         window.CromApp.state.activeToolId = null;
     }
+    window.CromApp.state.isFullscreen = false; // Reset max mode
+    const btnIcon = document.querySelector('button[onclick="CromApp.toggleFullscreen()"] i');
+    if (btnIcon) btnIcon.setAttribute('data-lucide', 'maximize');
 
     document.body.classList.remove('tool-active');
 };

@@ -22,14 +22,16 @@ self.onmessage = async function (e) {
         // Draw
         ctx.drawImage(bitmap, 0, 0);
 
-        // Convert to output format
-        const outFormat = format === 'jpeg' || format === 'jpg' ? 'image/jpeg' : 'image/png';
-        const quality = outFormat === 'image/jpeg' ? 0.90 : undefined;
+        let outFormat = 'image/png';
+        if (format === 'jpeg' || format === 'jpg') outFormat = 'image/jpeg';
+        else if (format === 'webp') outFormat = 'image/webp';
+
+        const q = (outFormat === 'image/jpeg' || outFormat === 'image/webp') ? e.data.quality : undefined;
 
         // Ensure async conversion completes
         const blobOutput = await offscreen.convertToBlob({
             type: outFormat,
-            quality: quality
+            quality: q
         });
 
         if (!blobOutput) throw new Error("Conversion resulted in empty blob");

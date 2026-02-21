@@ -4,8 +4,8 @@ window.CromApp.API_BASE = 'http://localhost:3000/v1';
 
 window.CromApp.services = {
     backend: {
-        url: window.CromApp.API_BASE,
-        enabled: true
+        enabled: true,
+        url: 'http://localhost:8082' // Aponta para o Caddy Dev Server 
     }
 };
 

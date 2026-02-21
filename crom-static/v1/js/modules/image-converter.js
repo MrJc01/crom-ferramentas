@@ -8,13 +8,33 @@ window.CromApp.registerTool({
     category: 'Imagem',
     tags: ['imagem', 'foto', 'conversor', 'png', 'jpg'],
     render: () => `
-        <div class="text-center py-20 border-4 border-dashed border-slate-100 dark:border-slate-800 rounded-3xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-            <i data-lucide="upload" class="mx-auto w-12 h-12 text-emerald-500 mb-4"></i>
-            <h3 class="text-xl font-bold">Arraste seus arquivos</h3>
-            <p class="text-slate-400 mt-2">Processamento Híbrido: < 2MB (Local), > 2MB (Nuvem Segura)</p>
-            <div class="relative mt-6 inline-block">
-                <button class="bg-emerald-500 text-white px-10 py-3 rounded-xl font-bold hover:bg-emerald-600 transition-colors pointer-events-none">Escolher Arquivos</button>
-                <input type="file" multiple onchange="window.handleImageUpload(this)" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+        <div class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border dark:border-slate-800">
+                    <label class="block text-sm font-bold text-slate-500 mb-2">Formato de Saída</label>
+                    <select id="img-format" class="w-full p-3 rounded-xl bg-white dark:bg-slate-900 border dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="webp">WebP (Recomendado)</option>
+                        <option value="png">PNG (Transparente)</option>
+                        <option value="jpeg">JPG (Fotografia)</option>
+                    </select>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border dark:border-slate-800">
+                    <div class="flex justify-between">
+                        <label class="block text-sm font-bold text-slate-500 mb-2">Qualidade/Compressão</label>
+                        <span id="img-quality-val" class="font-bold text-emerald-500">80%</span>
+                    </div>
+                    <input type="range" id="img-quality" min="1" max="100" value="80" class="w-full accent-emerald-500" oninput="document.getElementById('img-quality-val').innerText = this.value + '%'">
+                </div>
+            </div>
+
+            <div class="text-center py-20 border-4 border-dashed border-slate-100 dark:border-slate-800 rounded-3xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors relative">
+                <i data-lucide="upload" class="mx-auto w-12 h-12 text-emerald-500 mb-4"></i>
+                <h3 class="text-xl font-bold">Arraste seus arquivos</h3>
+                <p class="text-slate-400 mt-2">Processamento Híbrido: < 2MB (Local), > 2MB (Nuvem Segura)</p>
+                <div class="relative mt-6 inline-block">
+                    <button class="bg-emerald-500 text-white px-10 py-3 rounded-xl font-bold hover:bg-emerald-600 transition-colors pointer-events-none">Escolher Arquivos</button>
+                    <input type="file" multiple onchange="window.handleImageUpload(this)" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+                </div>
             </div>
         </div>
     `
@@ -28,6 +48,9 @@ async function processImageBatch(files) {
     window.CromApp.UI.showProgress('Iniciando processamento...', true);
     window.CromApp.UI.updateProgress(0, 0, total);
 
+    const format = document.getElementById('img-format').value;
+    const quality = document.getElementById('img-quality').value / 100;
+
     for (let i = 0; i < total; i++) {
         const file = files[i];
         window.CromApp.UI.updateProgress(Math.floor((i / total) * 100), i + 1, total);
@@ -37,10 +60,10 @@ async function processImageBatch(files) {
             let blob;
             if (file.size > MAX_LOCAL_SIZE) {
                 console.log(`File ${file.name} > 2MB, sending to server.`);
-                blob = await processImageServer(file);
+                blob = await processImageServer(file, format, quality);
             } else {
                 console.log(`File ${file.name} < 2MB, processing locally.`);
-                blob = await processImageLocal(file);
+                blob = await processImageLocal(file, format, quality);
             }
             window.CromApp.UI.addResult(blob, `processed-${file.name}`);
         } catch (e) {
@@ -53,11 +76,12 @@ async function processImageBatch(files) {
     window.CromApp.UI.hideProgress();
 }
 
-async function processImageServer(file) {
+async function processImageServer(file, format, quality) {
     const formData = new FormData();
     formData.append('image', file);
     formData.append('action', 'convert');
-    formData.append('format', 'png');
+    formData.append('format', format);
+    formData.append('quality', quality);
 
     const response = await fetch(`${window.CromApp.API_BASE}/process/image`, {
         method: 'POST',
@@ -77,7 +101,7 @@ function getImageWorkerPool() {
     return imageWorkerPool;
 }
 
-function processImageLocal(file) {
+function processImageLocal(file, format, quality) {
     return new Promise((resolve, reject) => {
         if (window.Worker) {
             // Read file as ArrayBuffer first
@@ -85,15 +109,13 @@ function processImageLocal(file) {
             reader.onload = function (e) {
                 const buffer = e.target.result;
 
-                // Use Pool
-                // FIX: Do NOT transfer buffer for < 2MB files. Copying is fast enough and safer.
-                // Prevents "detached ArrayBuffer" if we need to reuse it or if worker fails.
                 getImageWorkerPool().run({
                     buffer: buffer,
                     type: file.type,
                     name: file.name,
                     action: 'convert',
-                    format: 'png'
+                    format: format,
+                    quality: quality
                 }, []).then(data => { // Empty transfer list
                     resolve(data.blob);
                 }).catch(err => {
