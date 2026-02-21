@@ -36,16 +36,20 @@ window.generateQR = (text) => {
 
     wrapper.classList.remove('hidden');
 
-    new QRCode(container, {
-        text: text,
-        width: 256,
-        height: 256,
-        colorDark: "#000000",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.H
-    });
-
-    btn.classList.remove('hidden');
+    try {
+        new QRCode(container, {
+            text: text,
+            width: 256,
+            height: 256,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel ? QRCode.CorrectLevel.H : 2 // Fallback to 2 (H) if enum missing
+        });
+        btn.classList.remove('hidden');
+    } catch (e) {
+        console.error("QRCode generation failed:", e);
+        container.innerHTML = '<div class="text-red-500 text-sm py-4">Erro ao gerar código. Biblioteca ausente?</div>';
+    }
 };
 
 window.downloadQR = () => {
