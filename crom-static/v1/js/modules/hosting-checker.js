@@ -67,8 +67,9 @@ window.CromApp.registerTool({
                     const ip = dnsData.Answer[dnsData.Answer.length - 1].data;
 
                     // 2. Resolve ISP/ORG via RDAP (ARIN/RIPE/LACNIC public apis)
-                    // freeipapi is a good fallback since RDAP is disjointed across regions 
-                    const rdapRes = await fetch(`https://freeipapi.com/api/json/${ip}`);
+                    // Proxy avoiding CORS
+                    const apiUrl = window.CromApp.services.backend.url || 'http://localhost:8082';
+                    const rdapRes = await fetch(`${apiUrl}/v1/proxy/ip/${ip}`);
 
                     let isp = "Desconhecido";
                     let org = "Desconhecido";

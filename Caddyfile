@@ -33,13 +33,21 @@ http://localhost:8080 {
     file_server
     encode gzip zstd
 
+    # Auto-Update: Desativação do Cache em Desenvolvimento Local
+    @staticFiles {
+        path *.js *.css *.html
+    }
+    header @staticFiles Cache-Control "no-cache, no-store, must-revalidate"
+    header @staticFiles Pragma "no-cache"
+    header @staticFiles Expires "0"
+
     # Security Headers (Hardening)
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
         X-XSS-Protection "1; mode=block"
         
         # Corrigindo CSP para permitir execução segura na borda e Google Tags
-        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com static.crom.run https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://crom.run https://images.unsplash.com; connect-src 'self' http://localhost:3000 http://localhost:8082 https://tools-api.crom.run https://cloudflare-dns.com https://dns.google https://freeipapi.com https://rdap.arin.net https://api.allorigins.win;"
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com static.crom.run https://www.googletagmanager.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://* http://*; connect-src 'self' http://localhost:3000 http://localhost:8082 https://tools-api.crom.run https://cloudflare-dns.com https://dns.google https://rdap.arin.net https://unpkg.com;"
         
         Referrer-Policy "strict-origin-when-cross-origin"
         Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"

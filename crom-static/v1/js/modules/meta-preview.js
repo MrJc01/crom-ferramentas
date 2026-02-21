@@ -141,16 +141,17 @@ window.CromApp.registerTool({
                     const origBtnText = btn.innerHTML;
                     btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Lendo URL...';
                     lucide.createIcons();
-
-                    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(urlInput)}`;
+                    // Proxy avoiding CORS returning raw HTML
+                    const apiUrl = window.CromApp.services.backend.url || 'http://localhost:8082';
+                    const proxyUrl = `${apiUrl}/v1/proxy/meta?url=${encodeURIComponent(urlInput)}`;
                     const res = await fetch(proxyUrl);
-                    if (!res.ok) throw new Error("Erro de Proxy");
-                    const data = await res.json();
+                    if (!res.ok) throw new Error("Erro de Proxy Local");
+                    const html = await res.text();
 
-                    if (!data.contents) throw new Error("A página não retornou HTML");
+                    if (!html) throw new Error("A página não retornou HTML");
 
                     const parser = new DOMParser();
-                    const doc = parser.parseFromString(data.contents, "text/html");
+                    const doc = parser.parseFromString(html, "text/html");
 
                     const getMeta = (propOptions, nameOptions) => {
                         let selectors = [];

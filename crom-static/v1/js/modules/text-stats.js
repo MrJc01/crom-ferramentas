@@ -25,7 +25,7 @@ window.CromApp.registerTool({
                 </div>
                  <div>
                     <span class="text-[10px] font-bold text-slate-400">TEMPO DE LEITURA</span>
-                    <div id="statTime" class="text-xl font-bold text-emerald-600">0 min</div>
+                    <div id="statTime" class="text-xl font-bold text-emerald-600">0 seg</div>
                 </div>
                  <div>
                     <span class="text-[10px] font-bold text-slate-400 border-b block pb-2 mb-2">TOP PALAVRAS</span>
@@ -46,8 +46,16 @@ window.analyzeText = () => {
     document.getElementById('statChars').innerText = charCount;
 
     // Read time (avg 200 wpm)
-    const minutes = Math.ceil(words.length / 200);
-    document.getElementById('statTime').innerText = `~${minutes} min`;
+    const totalSeconds = Math.ceil((words.length / 200) * 60);
+    if (words.length === 0) {
+        document.getElementById('statTime').innerText = '0 seg';
+    } else if (totalSeconds < 60) {
+        document.getElementById('statTime').innerText = `${totalSeconds} seg`;
+    } else {
+        const mins = Math.floor(totalSeconds / 60);
+        const secs = totalSeconds % 60;
+        document.getElementById('statTime').innerText = secs > 0 ? `${mins}m ${secs}s` : `${mins} min`;
+    }
 
     // Freq
     const freq = {};

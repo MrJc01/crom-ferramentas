@@ -8,6 +8,7 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -26,7 +27,12 @@ func SetupRoutes(app *fiber.App) {
 	v1 := app.Group("/v1")
 
 	// Standard tools
+	// Standard tools
 	v1.Post("/convert/pdf", ConvertPDF)
+	
+	// Network Proxies (CORS bypass)
+	v1.Get("/proxy/meta", ProxyMeta)
+	v1.Get("/proxy/ip/:ip", ProxyIPAPI)
 	
 	// Image processing (Fallback for large files)
 	// Limit to 50MB
@@ -280,4 +286,50 @@ func ProcessHeavyVideo(c *fiber.Ctx) error {
 
 	// serve the file
 	return c.SendFile(outputPath)
+}
+
+// ProxyIPAPI bypasses CORS for freeipapi
+func ProxyIPAPI(c *fiber.Ctx) error {
+	ip := c.Params("ip")
+	if ip == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "IP required"})
+	}
+	resp, err := http.Get("https://freeipapi.com/api/json/" + ip)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch IP API"})
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	c.Set("Content-Type", "application/json")
+	return c.Send(body)
+}
+
+// ProxyMeta bypasses CORS to fetch HTML of a URL for meta tag extraction
+func ProxyMeta(c *fiber.Ctx) error {
+	target := c.Query("url")
+	if target == "" {
+		return c.Status(400).SendString("URL required")
+	}
+	
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	
+	req, err := http.NewRequestWithContext(ctx, "GET", target, nil)
+	if err != nil {
+		return c.Status(500).SendString("Invalid URL target")
+	}
+	
+	// Masquerade as a real browser
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+	
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return c.Status(500).SendString("Erro de Proxy na chamada remota")
+	}
+	defer resp.Body.Close()
+	
+	body, _ := io.ReadAll(resp.Body)
+	c.Set("Content-Type", "text/html")
+	return c.SendString(string(body))
 }
