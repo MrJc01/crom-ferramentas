@@ -157,10 +157,11 @@ const renderCards = () => {
 
     // Filter by Search
     if (searchQuery) {
-        filtered = filtered.filter(t =>
-            t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            t.tags.some(tag => tag.includes(searchQuery.toLowerCase()))
-        );
+        filtered = filtered.filter(t => {
+            const matchTitle = t.title && t.title.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchTags = t.tags && Array.isArray(t.tags) && t.tags.some(tag => tag.includes(searchQuery.toLowerCase()));
+            return matchTitle || matchTags;
+        });
     }
 
     if (filtered.length === 0) return `<div class="col-span-full py-20 text-center text-slate-400">Nenhuma ferramenta encontrada.</div>`;
